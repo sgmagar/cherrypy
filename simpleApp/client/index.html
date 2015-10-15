@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>WebSocket</title>
+</head>
+<body>
+	<h1>WebSocket Test Site</h1>
+	<div id="testform">
+		<textarea rows="10" cols="40" id="info"></textarea><br/>
+		<label for="username">Username</label>
+		<input type="text" id="username" value=""><br/>
+		<label for="password">Password</label>
+		<input type="password" id="password" value=""><br/>
+		<button id="login" onclick="login();">Login</button>
+		<button id="signup" onclick="signup();">Sign Up</button>
+		<button id="connect" onclick="connectSocket();">Connect</button>
+	</div>
+	<div id="response">
+	</div>
+	<script type="text/javascript">
+		var output = document.getElementById("info"); 
+		var webSocket;
+		var response = document.getElementById("response");
+		var btnConnect = document.getElementById("connect");
+
+		// btnConnect.onClick = function(e) {
+		// 	console.log("Clicked");
+		// 	e.preventDefault();
+		// 	connectSocket();
+		// }
+
+		function connectSocket(){
+			// Ensures only one connection is open at a time
+            if(webSocket !== undefined && webSocket.readyState !== WebSocket.CLOSED){
+               writeResponse("WebSocket is already opened.");
+                return;
+            }
+			webSocket = new WebSocket("ws://127.0.0.1:9000/sock/ws");
+
+			webSocket.onopen = function(event){
+				console.log("opened");
+				if(event.data === undefined)
+                    return;
+				writeResponse(event.data);
+			};
+			webSocket.onmessage = function(event){
+				recvData = JSON.parse(event.data);
+				string_data = JSON.stringify(recvData)
+				writeResponse(string_data);
+				command = recvData.cmd;
+				username = recvData.username;
+				password = recvData.password;
+				switch(command){
+					case "login_success":
+						writeOutput("welcome" + username);
+						writeResponse("You are in");
+						break;
+					case "login_unsuccess":
+						writeResponse("Invalid Login");
+						break;
+					case "signup_success":
+						writeResponse("Sign Up Success");
+						break;
+					case "signup_unsuccess":
+						writeResponse("Enter Valid data");
+						break;
+					default:
+						break;
+				}
+				//writeResponse("Username: "+username+"<br/>"+ "Password: "+password);
+				//writeOutput("Username: "+username+"\n"+ "Password: "+password);
+			};
+			webSocket.onclose = function(event){
+				writeResponse("connection closed");
+			};
+		};
+		var i = 0;
+		function login(){
+			var username = document.getElementById("username").value;
+			var password = document.getElementById("password").value;
+			var myJSONObject = {"cmd":"login","msg":{"username":username, "password":password}};
+			var jsonData= JSON.stringify(myJSONObject);
+			//writeResponse(jsonData);
+			webSocket.send(jsonData);
+			//webSocket.send(password);
+		};
+		function signup(){
+			var username = document.getElementById("username").value;
+			var password = document.getElementById("password").value;
+			var myJSONObject = {"cmd":"signup","msg":{"username":username, "password":password}};
+			var jsonData= JSON.stringify(myJSONObject);
+			//writeResponse(jsonData);
+			webSocket.send(jsonData);
+			//webSocket.send(password);
+		};
+
+		function writeResponse(text){
+			response.innerHTML +="<br/>" + text;
+		};
+		function writeOutput(text){
+			output.value += "\n" + text;
+		};
+		function closeSocket(){
+			webSocket.close();
+		};
+	</script>
+
+</body>
+</html>
